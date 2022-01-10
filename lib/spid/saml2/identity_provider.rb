@@ -30,7 +30,7 @@ module Spid
       def raw_certificate
         element_from_xpath(
           "/md:EntityDescriptor/md:IDPSSODescriptor" \
-          "/md:KeyDescriptor[@use='encryption']/ds:KeyInfo" \
+          "/md:KeyDescriptor[@use='signing']/ds:KeyInfo" \
           "/ds:X509Data/ds:X509Certificate/text()"
         )
       end

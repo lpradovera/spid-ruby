@@ -35,6 +35,9 @@ module Spid
             element.add_attributes(entity_descriptor_attributes)
             element.add_element sp_sso_descriptor
             element.add_element signature
+            element.add_element organization
+            element.add_element contact_person
+            element.add_element billing_contact
             element
           end
       end
@@ -43,6 +46,7 @@ module Spid
         @entity_descriptor_attributes ||= {
           "xmlns:ds" => "http://www.w3.org/2000/09/xmldsig#",
           "xmlns:md" => "urn:oasis:names:tc:SAML:2.0:metadata",
+          "xmlns:spid" => "https://spid.gov.it/saml-extensions",
           "entityID" => settings.sp_entity_id,
           "ID" => entity_descriptor_id
         }
@@ -99,6 +103,73 @@ module Spid
         element = REXML::Element.new("md:RequestedAttribute")
         element.add_attributes("Name" => ATTRIBUTES_MAP[name])
         element
+      end
+
+      def organization
+        element = REXML::Element.new("md:Organization")
+
+        orgname = REXML::Element.new("md:OrganizationName")
+        orgname.add_attributes("xml:lang" => "it")
+        orgname.text = 'Organization Name' # TODO: get this from config
+        element.add_element orgname
+
+        orgdisplay = REXML::Element.new("md:OrganizationDisplayName")
+        orgdisplay.add_attributes("xml:lang" => "it")
+        orgdisplay.text = 'Organization Name' # TODO: get this from config
+        element.add_element orgdisplay
+
+        orgurl = REXML::Element.new("md:OrganizationURL")
+        orgurl.add_attributes("xml:lang" => "it")
+        orgurl.text = 'https://lucasmbp.ngrok.io' # TODO: get this from config
+        element.add_element orgurl
+
+        element
+      end
+
+      def contact_person
+        element = REXML::Element.new("md:ContactPerson")
+        element.add_attributes("contactType" => "other")
+
+        extension = REXML::Element.new("md:Extensions")
+        vat = REXML::Element.new("spid:VATNumber")
+        vat.text = "IT12345678901" # TODO: get this from config
+        extension.add_element vat
+        private_tag = REXML::Element.new("spid:Private")
+        extension.add_element private_tag
+        element.add_element extension
+
+        email = REXML::Element.new("md:EmailAddress")
+        email.text = "info@example.org" # TODO: get this from config
+        element.add_element email
+
+        element
+      end
+
+      def billing_contact
+        REXML::Element.new("md:ContactPerson").tap do |element|
+          element.add_attributes("contactType" => "billing")
+          element.add_element REXML::Element.new("md:Extensions").tap { |ext|
+            ext.add_attributes("xmlns:fpa" => "https://spid.gov.it/invoicing-extensions")
+            ext.add_element REXML::Element.new("fpa:CessionarioCommittente").tap { |cc|
+              cc.add_element REXML::Element.new("fpa:DatiAnagrafici").tap { |anag|
+                anag.add_element REXML::Element.new("fpa:IdFiscaleIVA").tap { |idfisc|
+                  idfisc.add_element REXML::Element.new("fpa:IdPaese").tap { |idpaese|
+                    idpaese.text = "IT"
+                  }
+                  idfisc.add_element REXML::Element.new("fpa:IdCodice").tap { |idcodice|
+                    idcodice.text = "01234567891"
+                  }
+                }
+
+                anag.add_element REXML::Element.new("fpa:Anagrafica").tap { |an|
+                  an.add_element REXML::Element.new("fpa:Denominazione").tap { |den|
+                    den.text = "Destinatario_Billing"
+                  }
+                }
+              }
+            }
+          }
+        end
       end
 
       def sp_sso_descriptor_attributes
