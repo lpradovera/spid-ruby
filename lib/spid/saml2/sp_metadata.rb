@@ -167,8 +167,27 @@ module Spid
                   }
                 }
               }
+
+              cc.add_element REXML::Element.new("fpa:Sede").tap { |sede|
+                sede.add_element REXML::Element.new("fpa:Indirizzo").tap { |el|
+                  el.text = "Piazza Verdi"
+                }
+                sede.add_element REXML::Element.new("fpa:CAP").tap { |el|
+                  el.text = "20121"
+                }
+                sede.add_element REXML::Element.new("fpa:Comune").tap { |el|
+                  el.text = "Milano"
+                }
+                sede.add_element REXML::Element.new("fpa:Nazione").tap { |el|
+                  el.text = "IT"
+                }
+              }
             }
           }
+
+          email = REXML::Element.new("md:EmailAddress")
+          email.text = "info@example.org" # TODO: get this from config
+          element.add_element email
         end
       end
 
@@ -176,7 +195,8 @@ module Spid
         @sp_sso_descriptor_attributes ||= {
           "protocolSupportEnumeration" =>
             "urn:oasis:names:tc:SAML:2.0:protocol",
-          "AuthnRequestsSigned" => true
+          "AuthnRequestsSigned" => true,
+          "WantAssertionsSigned" => true
         }
       end
 
