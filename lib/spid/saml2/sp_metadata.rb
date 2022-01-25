@@ -16,6 +16,7 @@ module Spid
 
       def unsigned_document
         document.add_element(entity_descriptor)
+        puts document.to_s
         document.to_s
       end
 
@@ -33,8 +34,8 @@ module Spid
           begin
             element = REXML::Element.new("md:EntityDescriptor")
             element.add_attributes(entity_descriptor_attributes)
-            element.add_element sp_sso_descriptor
             element.add_element signature
+            element.add_element sp_sso_descriptor
             element.add_element organization
             element.add_element contact_person
             element.add_element billing_contact
@@ -60,8 +61,8 @@ module Spid
             element = REXML::Element.new("md:SPSSODescriptor")
             element.add_attributes(sp_sso_descriptor_attributes)
             element.add_element key_descriptor
-            element.add_element ac_service
             element.add_element slo_service
+            element.add_element ac_service
             settings.sp_attribute_services.each.with_index do |service, index|
               name = service[:name]
               fields = service[:fields]
@@ -76,10 +77,19 @@ module Spid
       # rubocop:enable Metrics/MethodLength
 
       def signature
-        @signature ||= ::Spid::Saml2::XmlSignature.new(
+        @signature ||= decorate_signature
+      end
+
+      def decorate_signature
+        element = ::Spid::Saml2::XmlSignature.new(
           settings: settings,
           sign_reference: entity_descriptor_id
         ).signature
+        ki = element.add_element "ds:KeyInfo"
+        data = ki.add_element "ds:X509Data"
+        certificate = data.add_element "ds:X509Certificate"
+        certificate.text = settings.x509_certificate_der
+        element
       end
 
       def attribute_consuming_service(index, name, fields)
